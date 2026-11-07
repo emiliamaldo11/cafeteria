@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,7 +11,7 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
 </head>
-<body class="bg-white text-stone-900 antialiased pb-32">
+<body class="bg-white text-stone-900 antialiased pb-40">
 
     <!-- BARRA SUPERIOR FIJA (MODO / CONTEXTO) -->
     <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-100 px-4 py-3 shadow-xs">
@@ -44,7 +45,7 @@
             <button onclick="filterMenu('frios')" class="cat-btn bg-stone-100 text-stone-600 px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition hover:bg-stone-200">Bebidas Frías</button>
         </div>
 
-        <!-- LISTADO DE PRODUCTOS EN GRILLA ADAPTABLE (1 col en celu, 2 en compu) -->
+        <!-- LISTADO DE PRODUCTOS -->
         <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             <!-- ITEM 1 -->
@@ -120,11 +121,19 @@
         </div>
     </main>
 
-    <!-- CARRITO FLOTANTE (ESTILO CLARO) -->
-    <div id="cart-container" class="fixed bottom-6 right-6 max-w-sm w-full z-40 bg-white text-stone-900 rounded-2xl shadow-2xl p-5 hidden border border-stone-200">
+    <!-- BOTÓN FLOTANTE PERMANENTE PARA ABRIR EL CARRITO SI ESTÁ CERRADO -->
+    <div id="floating-cart-btn" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 hidden">
+        <button onclick="toggleCart()" class="bg-stone-900 hover:bg-stone-800 text-white font-bold py-3 px-6 rounded-full shadow-2xl flex items-center gap-3 text-sm transition border border-stone-700">
+            <span>🛒 Ver tu pedido</span>
+            <span id="floating-cart-badge" class="bg-[#25D366] text-white text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
+        </button>
+    </div>
+
+    <!-- VENTANA FLOTANTE DEL CARRITO (TAKE AWAY) -->
+    <div id="cart-container" class="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm w-auto z-40 bg-white text-stone-900 rounded-2xl shadow-2xl p-5 hidden border border-stone-200">
         <div class="flex justify-between items-center mb-3 border-b border-stone-100 pb-2">
             <h4 class="font-bold text-sm text-stone-900">🛒 Tu Pedido Take Away</h4>
-            <button onclick="toggleCart()" class="text-stone-400 hover:text-stone-900 text-xs font-bold">✕</button>
+            <button onclick="toggleCart()" class="text-stone-400 hover:text-stone-900 text-xs font-bold p-1">✕ Ocultar</button>
         </div>
         <div id="cart-items" class="space-y-2 max-h-40 overflow-y-auto mb-3 text-xs sm:text-sm pr-1"></div>
         <div class="flex justify-between items-center font-bold text-base mb-4 pt-2 border-t border-stone-100">
@@ -148,6 +157,7 @@
             const modeBanner = document.getElementById('mode-banner');
             const actionBtns = document.querySelectorAll('.action-btn');
             const cartContainer = document.getElementById('cart-container');
+            const floatingCartBtn = document.getElementById('floating-cart-btn');
 
             if (mode === 'mesa') {
                 btnMesa.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-lg bg-white text-stone-900 shadow-sm transition";
@@ -155,12 +165,16 @@
                 modeBanner.innerText = "✨ Estás consultando la carta en la mesa. Elegí tranquilo hasta que te atendamos.";
                 actionBtns.forEach(btn => btn.classList.add('hidden'));
                 cartContainer.style.display = 'none';
+                floatingCartBtn.style.display = 'none';
             } else {
                 btnTakeaway.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-lg bg-white text-stone-900 shadow-sm transition";
                 btnMesa.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-stone-500 transition";
                 modeBanner.innerText = "🚀 Estás armando un pedido Take Away para retirar sin esperas.";
                 actionBtns.forEach(btn => btn.classList.remove('hidden'));
-                if (cart.length > 0) cartContainer.style.display = 'block';
+                if (cart.length > 0) {
+                    cartContainer.style.display = 'block';
+                    floatingCartBtn.style.display = 'block';
+                }
             }
         }
 
@@ -194,18 +208,22 @@
 
             updateCartUI();
             document.getElementById('cart-container').style.display = 'block';
+            document.getElementById('floating-cart-btn').style.display = 'block';
         }
 
         function updateCartUI() {
             const cartItemsContainer = document.getElementById('cart-items');
             const cartTotalContainer = document.getElementById('cart-total');
+            const floatingCartBadge = document.getElementById('floating-cart-badge');
 
             cartItemsContainer.innerHTML = '';
             let total = 0;
+            let totalCount = 0;
 
             cart.forEach((item, index) => {
                 let subtotal = item.price * item.quantity;
                 total += subtotal;
+                totalCount += item.quantity;
 
                 cartItemsContainer.innerHTML += `
                     <div class="flex justify-between items-center bg-stone-50 p-2.5 rounded-xl border border-stone-100">
@@ -223,6 +241,7 @@
             });
 
             cartTotalContainer.innerText = `$${total.toLocaleString()}`;
+            floatingCartBadge.innerText = totalCount;
         }
 
         function changeQuantity(index, delta) {
@@ -233,12 +252,17 @@
             updateCartUI();
             if (cart.length === 0) {
                 document.getElementById('cart-container').style.display = 'none';
+                document.getElementById('floating-cart-btn').style.display = 'none';
             }
         }
 
         function toggleCart() {
             const cartContainer = document.getElementById('cart-container');
-            cartContainer.style.display = cartContainer.style.display === 'none' ? 'block' : 'none';
+            if (cartContainer.style.display === 'none') {
+                if (cart.length > 0) cartContainer.style.display = 'block';
+            } else {
+                cartContainer.style.display = 'none';
+            }
         }
 
         function checkoutWhatsApp() {
@@ -265,3 +289,4 @@
     </script>
 </body>
 </html>
+
